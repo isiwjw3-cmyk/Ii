@@ -1,0 +1,56 @@
+-- [[ Fast Item Pickup Script for Delta Executor ]] --
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+-- สร้างปุ่มลอยสำหรับเปิด/ปิดฟังก์ชั่น (ไม่มีเมนูใหญ่)
+local ToggleButton = Fluent:CreateToggle("InstantPickup", {
+    Title = "หยิบไข่ไว (Instant Pickup)",
+    Default = false
+})
+
+-- บันทึกค่า HoldDuration ดั้งเดิมไว้ เพื่อคืนค่าเดิมเมื่อปิดฟังก์ชั่น
+local originalDurations = {}
+
+-- ฟังก์ชั่นจัดการ ProximityPrompt ทั้งหมดในเกม
+local function setInstantPickup(enabled)
+    for _, prompt in pairs(game:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            if enabled then
+                if originalDurations[prompt] == nil then
+                    originalDurations[prompt] = prompt.HoldDuration
+                end
+                prompt.HoldDuration = 0
+            else
+                if originalDurations[prompt] ~= nil then
+                    prompt.HoldDuration = originalDurations[prompt]
+                end
+            end
+        end
+    end
+end
+
+-- ดักจับไอเทม/ไข่ ที่เพิ่งเสกเข้ามาใหม่ในเกมขณะเล่น
+game.DescendantAdded:Connect(function(descendant)
+    if descendant:IsA("ProximityPrompt") and ToggleButton.Value then
+        originalDurations[descendant] = descendant.HoldDuration
+        descendant.HoldDuration = 0
+    end
+end)
+
+-- ทำงานเมื่อมีการเปิด/ปิด Toggle
+ToggleButton:OnChanged(function()
+    setInstantPickup(ToggleButton.Value)
+    
+    if ToggleButton.Value then
+        Fluent:Notify({
+            Title = "หยิบไข่ไว",
+            Content = "เปิดใช้งานเรียบร้อย (ไม่ต้องกดค้าง)",
+            Duration = 3
+        })
+    else
+        Fluent:Notify({
+            Title = "หยิบไข่ไว",
+            Content = "ปิดการใช้งานแล้ว",
+            Duration = 3
+        })
+    end
+end)
